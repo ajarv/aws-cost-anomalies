@@ -1,9 +1,7 @@
-variable "allowed_role_arns" {
-  type    = list(string)
-  default = [
-        # Metric's collector Role ARN where N1NNNNNNNNNN is ops/management account 
-        "arn:aws:iam::N1NNNNNNNNNN:role/cost-metrics-collector",
-  ]
+variable "collector_arn" {
+  type    = string
+  # Metric's collector Role ARN where N1NNNNNNNNNN is ops/management account
+  default = "arn:aws:iam::N1NNNNNNNNNN:role/cost-metrics-collector"
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -12,13 +10,13 @@ data "aws_iam_policy_document" "assume_role_policy" {
     effect  = "Allow"
 
     principals {
-      identifiers = var.allowed_role_arns
+      identifiers = [var.collector_arn]
       type        = "AWS"
     }
   }
 }
 
-data "aws_iam_policy_document" "metrics-collector" {
+data "aws_iam_policy_document" "metrics-reader" {
   statement {
     sid = "CostExplorerPermissions"
     effect = "Allow"
@@ -47,18 +45,18 @@ data "aws_iam_policy_document" "metrics-collector" {
 
 }
 
-resource "aws_iam_policy" "metrics-collector" {
-  name        = "quicksight-metrics-collector"
+resource "aws_iam_policy" "metrics-reader" {
+  name        = "quicksight-metrics-reader"
   description = "policy to allow  metrics collection"
-  policy      = data.aws_iam_policy_document.metrics-collector.json
+  policy      = data.aws_iam_policy_document.metrics-reader.json
 }
 
-resource "aws_iam_role" "metrics-collector" {
-  name               = "quicksight-metrics-collector"
+resource "aws_iam_role" "metrics-reader" {
+  name               = "quicksight-metrics-reader"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "aws_read_only_policy_attach" {
-  role       = aws_iam_role.metrics-collector.name
-  policy_arn = aws_iam_policy.metrics-collector.arn
+  role       = aws_iam_role.metrics-reader.name
+  policy_arn = aws_iam_policy.metrics-reader.arn
 }
